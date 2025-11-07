@@ -25,12 +25,12 @@ def load_data():
         # Approach 1: Project root directory (local development)
         project_root = os.path.dirname(os.path.abspath(__file__))
         ec2_path = os.path.join(project_root, 'aws_resources_compute.csv')
-        s3_path = os.path.join(project_root, 'aws_resources_s3.csv')
+        s3_path = os.path.join(project_root, 'aws_resources_S3.csv')
         
         if not os.path.exists(ec2_path):
             # Approach 2: Current working directory (Streamlit Cloud)
             ec2_path = 'aws_resources_compute.csv'
-            s3_path = 'aws_resources_s3.csv'
+            s3_path = 'aws_resources_S3.csv'
         
         ec2_df = pd.read_csv(ec2_path)
         s3_df = pd.read_csv(s3_path)
