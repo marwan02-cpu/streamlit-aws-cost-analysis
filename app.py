@@ -21,7 +21,7 @@ plt.rcParams['figure.figsize'] = (14, 8)
 @st.cache_data
 def load_data():
     # Get project root directory
-    project_root = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.getcwd()
     print(project_root)
     # Construct file paths
     ec2_path = os.path.join(project_root, 'aws_resources_compute.csv')
