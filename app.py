@@ -22,7 +22,7 @@ plt.rcParams['figure.figsize'] = (14, 8)
 def load_data():
     # Get project root directory
     project_root = os.path.dirname(os.path.abspath(__file__))
-    
+    print(project_root)
     # Construct file paths
     ec2_path = os.path.join(project_root, 'aws_resources_compute.csv')
     s3_path = os.path.join(project_root, 'aws_resources_s3.csv')
@@ -139,16 +139,6 @@ elif page == "EC2 Analysis":
     
     st.markdown("---")
     
-    st.subheader("Average EC2 Cost per Region")
-    regions = ['us-east-1', 'us-west-2', 'ap-south-1', 'eu-west-1']
-    cols = st.columns(4)
-    for i, region in enumerate(regions):
-        avg_cost = ec2_df[ec2_df['Region'] == region]['TotalCostToDate'].mean()
-        with cols[i]:
-            st.metric(region, f"${avg_cost:,.2f}")
-
-    st.markdown("---")
-
     st.subheader("EC2 Metrics by Region")
     ec2_metrics = ec2_df.groupby('Region').agg({
         'TotalCostToDate': ['sum', 'mean', 'count'],
@@ -158,6 +148,16 @@ elif page == "EC2 Analysis":
     ec2_metrics.columns = ['Total Cost', 'Avg Cost', 'Instance Count', 'Avg CPU %', 'Avg Memory %']
     st.dataframe(ec2_metrics.sort_values('Total Cost', ascending=False))
     
+    st.markdown("---")
+    
+    st.subheader("Average EC2 Cost per Region")
+    regions = ['us-east-1', 'us-west-2', 'ap-south-1', 'eu-west-1']
+    cols = st.columns(4)
+    for i, region in enumerate(regions):
+        avg_cost = ec2_df[ec2_df['Region'] == region]['TotalCostToDate'].mean()
+        with cols[i]:
+            st.metric(region, f"${avg_cost:,.2f}")
+
 # ============================================================================
 # PAGE: S3 ANALYSIS
 # ============================================================================
@@ -188,16 +188,6 @@ elif page == "S3 Analysis":
     
     st.markdown("---")
     
-    st.subheader("Total S3 Storage per Region")
-    regions = ['us-east-1', 'us-west-2', 'ap-south-1', 'eu-west-1']
-    cols = st.columns(4)
-    for i, region in enumerate(regions):
-        total_storage = s3_df[s3_df['Region'] == region]['TotalSizeGB'].sum()
-        with cols[i]:
-            st.metric(region, f"{total_storage:,.2f} GB")
-
-    st.markdown("---")
-
     st.subheader("S3 Metrics by Region")
     s3_metrics = s3_df.groupby('Region').agg({
         'TotalSizeGB': ['sum', 'mean'],
@@ -206,6 +196,16 @@ elif page == "S3 Analysis":
     }).round(2)
     s3_metrics.columns = ['Total Storage (GB)', 'Avg Storage (GB)', 'Total Cost', 'Avg Cost', 'Total Objects']
     st.dataframe(s3_metrics.sort_values('Total Cost', ascending=False))
+    
+    st.markdown("---")
+    
+    st.subheader("Total S3 Storage per Region")
+    regions = ['us-east-1', 'us-west-2', 'ap-south-1', 'eu-west-1']
+    cols = st.columns(4)
+    for i, region in enumerate(regions):
+        total_storage = s3_df[s3_df['Region'] == region]['TotalSizeGB'].sum()
+        with cols[i]:
+            st.metric(region, f"{total_storage:,.2f} GB")
 
 # ============================================================================
 # PAGE: TOP RESOURCES
@@ -217,13 +217,27 @@ elif page == "Top Resources":
     
     with col1:
         st.subheader("Top 5 Most Expensive EC2 Instances")
-        top5_ec2 = ec2_df.nlargest(5, 'TotalCostToDate')[['ResourceId', 'InstanceType', 'Region', 'TotalCostToDate', 'CPUUtilization', 'State']]
-        st.dataframe(top5_ec2)
-    
+        top5_ec2 = ec2_df.nlargest(5, 'TotalCostToDate')[['ResourceId', 'InstanceType', 'TotalCostToDate']]
+
+        fig, ax = plt.subplots(figsize=(10, 6))
+        ax.barh(range(len(top5_ec2)), top5_ec2['TotalCostToDate'].values, color='coral', edgecolor='black')
+        ax.set_yticks(range(len(top5_ec2)))
+        ax.set_yticklabels([f"{rid}\n({itype})" for rid, itype in zip(top5_ec2['ResourceId'], top5_ec2['InstanceType'])])
+        ax.set_title('Top 5 Most Expensive EC2 Instances', fontweight='bold', fontsize=12)
+        ax.set_xlabel('Total Cost (USD)')
+        st.pyplot(fig)
+
     with col2:
         st.subheader("Top 5 Largest S3 Buckets")
-        top5_s3 = s3_df.nlargest(5, 'TotalSizeGB')[['BucketName', 'Region', 'StorageClass', 'TotalSizeGB', 'ObjectCount', 'TotalCostToDate']]
-        st.dataframe(top5_s3)
+        top5_s3 = s3_df.nlargest(5, 'TotalSizeGB')[['BucketName', 'TotalSizeGB']]
+
+        fig, ax = plt.subplots(figsize=(10, 6))
+        ax.barh(range(len(top5_s3)), top5_s3['TotalSizeGB'].values, color='mediumseagreen', edgecolor='black')
+        ax.set_yticks(range(len(top5_s3)))
+        ax.set_yticklabels(top5_s3['BucketName'])
+        ax.set_title('Top 5 Largest S3 Buckets', fontweight='bold', fontsize=12)
+        ax.set_xlabel('Total Size (GB)')
+        st.pyplot(fig)
 
 # ============================================================================
 # PAGE: COST SUMMARY
