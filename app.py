@@ -20,15 +20,23 @@ plt.rcParams['figure.figsize'] = (14, 8)
 # ============================================================================
 @st.cache_data
 def load_data():
-    # Get project root directory
-    project_root = os.getcwd()
-    print(project_root)
-    # Construct file paths
-    ec2_path = os.path.join(project_root, 'aws_resources_compute.csv')
-    s3_path = os.path.join(project_root, 'aws_resources_s3.csv')
-    
-    ec2_df = pd.read_csv(ec2_path)
-    s3_df = pd.read_csv(s3_path)
+    # Try multiple path approaches for local and cloud environments
+    try:
+        # Approach 1: Project root directory (local development)
+        project_root = os.path.dirname(os.path.abspath(__file__))
+        ec2_path = os.path.join(project_root, 'aws_resources_compute.csv')
+        s3_path = os.path.join(project_root, 'aws_resources_s3.csv')
+        
+        if not os.path.exists(ec2_path):
+            # Approach 2: Current working directory (Streamlit Cloud)
+            ec2_path = 'aws_resources_compute.csv'
+            s3_path = 'aws_resources_s3.csv'
+        
+        ec2_df = pd.read_csv(ec2_path)
+        s3_df = pd.read_csv(s3_path)
+    except FileNotFoundError as e:
+        st.error(f"Error: Could not find CSV files. Make sure 'aws_resources_compute.csv' and 'aws_resources_s3.csv' are in the project root directory.")
+        st.stop()
     
     # Remove completely empty rows
     ec2_df = ec2_df.dropna(how='all')
@@ -218,7 +226,7 @@ elif page == "Top Resources":
     with col1:
         st.subheader("Top 5 Most Expensive EC2 Instances")
         top5_ec2 = ec2_df.nlargest(5, 'TotalCostToDate')[['ResourceId', 'InstanceType', 'TotalCostToDate']]
-
+        
         fig, ax = plt.subplots(figsize=(10, 6))
         ax.barh(range(len(top5_ec2)), top5_ec2['TotalCostToDate'].values, color='coral', edgecolor='black')
         ax.set_yticks(range(len(top5_ec2)))
@@ -226,11 +234,11 @@ elif page == "Top Resources":
         ax.set_title('Top 5 Most Expensive EC2 Instances', fontweight='bold', fontsize=12)
         ax.set_xlabel('Total Cost (USD)')
         st.pyplot(fig)
-
+    
     with col2:
         st.subheader("Top 5 Largest S3 Buckets")
         top5_s3 = s3_df.nlargest(5, 'TotalSizeGB')[['BucketName', 'TotalSizeGB']]
-
+        
         fig, ax = plt.subplots(figsize=(10, 6))
         ax.barh(range(len(top5_s3)), top5_s3['TotalSizeGB'].values, color='mediumseagreen', edgecolor='black')
         ax.set_yticks(range(len(top5_s3)))
